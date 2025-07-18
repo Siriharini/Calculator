@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylish Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #A35C7A; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .calculator {
+            background-color: #C890A7; 
+            border-radius: 1.5rem;  
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 360px; 
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .display {
+            background-color: rgba(255, 255, 255, 0.9); 
+            color: #333;
+            font-size: 2.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; 
+            text-align: right;
+            margin-bottom: 1rem;
+            min-height: 70px; 
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            word-wrap: break-word;
+            overflow-x: auto; 
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem; 
+        }
+
+        .button {
+            background-color: #A35C7A; 
+            color: #FFFFFF; 
+            font-size: 1.5rem;
+            padding: 1.2rem;
+            border: none;
+            border-radius: 0.75rem; 
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .button:hover {
+            background-color: #8C4B69; 
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .button.operator {
+            background-color: #6A3B52; 
+        }
+
+        .button.operator:hover {
+            background-color: #552F42;
+        }
+
+        .button.equals {
+            background-color: #4A2837; 
+            grid-column: span 2; 
+        }
+
+        .button.equals:hover {
+            background-color: #3A1F2C;
+        }
+
+        .button.clear {
+            background-color: #D32F2F; 
+        }
+
+        .button.clear:hover {
+            background-color: #B71C1C;
+        }
+
+       
+        @media (max-width: 400px) {
+            .calculator {
+                padding: 1.5rem;
+                border-radius: 1rem;
+            }
+            .display {
+                font-size: 2rem;
+                padding: 0.8rem 1rem;
+            }
+            .button {
+                font-size: 1.2rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons-grid">
+            <button class="button clear" data-action="clear">C</button>
+            <button class="button operator" data-action="negate">+/-</button>
+            <button class="button operator" data-action="percent">%</button>
+            <button class="button operator" data-action="divide">/</button>
+
+            <button class="button" data-value="7">7</button>
+            <button class="button" data-value="8">8</button>
+            <button class="button" data-value="9">9</button>
+            <button class="button operator" data-action="multiply">*</button>
+
+            <button class="button" data-value="4">4</button>
+            <button class="button" data-value="5">5</button>
+            <button class="button" data-value="6">6</button>
+            <button class="button operator" data-action="subtract">-</button>
+
+            <button class="button" data-value="1">1</button>
+            <button class="button" data-value="2">2</button>
+            <button class="button" data-value="3">3</button>
+            <button class="button operator" data-action="add">+</button>
+
+            <button class="button" data-value="0">0</button>
+            <button class="button" data-value=".">.</button>
+            <button class="button equals" data-action="equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const buttons = document.querySelectorAll('.button');
+
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = null;
+        let waitingForSecondOperand = false;
+
+        function updateDisplay() {
+            display.textContent = currentInput;
+        }
+        function clearCalculator() {
+            currentInput = '0';
+            previousInput = '';
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+        function inputNumber(number) {
+            if (waitingForSecondOperand) {
+                currentInput = number;
+                waitingForSecondOperand = false;
+            } else {
+                currentInput = currentInput === '0' ? number : currentInput + number;
+            }
+            updateDisplay();
+        }
+
+        function inputDecimal() {
+            if (waitingForSecondOperand) {
+                currentInput = '0.';
+                waitingForSecondOperand = false;
+            } else if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            updateDisplay();
+        }
+        function handleOperator(nextOperator) {
+            const inputValue = parseFloat(currentInput);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            if (previousInput === '') {
+                previousInput = inputValue;
+            } else if (operator) {
+                const result = calculate(previousInput, inputValue, operator);
+                currentInput = String(result);
+                previousInput = result;
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            updateDisplay();
+        }
+        function calculate(firstOperand, secondOperand, op) {
+            switch (op) {
+                case '+':
+                    return firstOperand + secondOperand;
+                case '-':
+                    return firstOperand - secondOperand;
+                case '*':
+                    return firstOperand * secondOperand;
+                case '/':
+                    return firstOperand / secondOperand;
+                case '%':
+                    return firstOperand * (secondOperand / 100); 
+                default:
+                    return secondOperand;
+            }
+        }
+        function equals() {
+            const inputValue = parseFloat(currentInput);
+
+            if (previousInput === '' || operator === null) {
+                return;
+            }
+
+            currentInput = String(calculate(previousInput, inputValue, operator));
+            previousInput = '';
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        function negate() {
+            currentInput = String(parseFloat(currentInput) * -1);
+            updateDisplay();
+        }
+        buttons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                const { value, action } = event.target.dataset;
+
+                if (value) {
+                    inputNumber(value);
+                } else if (action) {
+                    switch (action) {
+                        case 'clear':
+                            clearCalculator();
+                            break;
+                        case 'negate':
+                            negate();
+                            break;
+                        case 'percent':
+                            currentInput = String(parseFloat(currentInput) / 100);
+                            updateDisplay();
+                            break;
+                        case 'divide':
+                        case 'multiply':
+                        case 'subtract':
+                        case 'add':
+                            handleOperator(action === 'divide' ? '/' : action === 'multiply' ? '*' : action === 'subtract' ? '-' : '+');
+                            break;
+                        case 'equals':
+                            equals();
+                            break;
+                    }
+                } else if (event.target.textContent === '.') {
+                    inputDecimal();
+                }
+            });
+        });
+        updateDisplay();
+    </script>
+</body>
+</html>
